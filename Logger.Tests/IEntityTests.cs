@@ -24,7 +24,7 @@ public class IEntityTests
         Assert.Equal("Name", t.Name);
     }
 
-    private record TestEntity : IEntity
+    private sealed record TestEntity : IEntity
     {
         public Guid Id { get; init; }
         public string Name { get; init; } = string.Empty;
