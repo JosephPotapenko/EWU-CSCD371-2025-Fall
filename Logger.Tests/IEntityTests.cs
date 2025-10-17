@@ -6,14 +6,22 @@ namespace Logger.Tests;
 public class IEntityTests
 {
     [Fact]
-    public void IEntity_Definition_HasIdAndName()
+    public void IEntity_ValidParams_CreatesEntity()
     {
-        // The test will compile only if IEntity exists with the required members.
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
         IEntity impl = new TestEntity { Id = id, Name = "X" };
 
         Assert.Equal(id, impl.Id);
         Assert.Equal("X", impl.Name);
+    }
+
+    [Fact]
+    public void IEntity_ObjectInitialized_EqualityOfDifferentParts()
+    {
+        Guid id = Guid.NewGuid();
+        TestEntity t = new TestEntity { Id = id, Name = "Name" };
+        Assert.Equal(id, t.Id);
+        Assert.Equal("Name", t.Name);
     }
 
     private record TestEntity : IEntity
