@@ -7,8 +7,9 @@ namespace Logger;
 /// </summary>
 public abstract class EntityBase : IEntity
 {
+    // Id: implemented here implicitly to provide a single init-only Guid Id implementation for all derived entities.
     public Guid Id { get; init; }
 
-    // Do not implement Name here. Make derived classes to provide it.
+    // Name: left abstract so derived classes must provide a calculated, backing-field-free implementation.
     public abstract string Name { get; }
 }
