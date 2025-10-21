@@ -39,7 +39,7 @@ public class EntityBaseTests
         Assert.Equal(d.Id, i.Id);
     }
 
-    private class TestDerived : Logger.EntityBase
+    private record TestDerived : Logger.EntityBase
     {
         public override string Name => "Test Derived";
     }
