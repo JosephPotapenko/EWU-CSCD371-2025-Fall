@@ -15,7 +15,7 @@ public class EmployeeTests
         // Assert
         Assert.NotNull(employee);
         Assert.Equal(id, employee.Id);
-        Assert.Equal(name, employee.Fullname);
+        Assert.Equal(name, employee.FullName);
     }
 
     [Fact]

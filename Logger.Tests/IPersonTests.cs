@@ -5,9 +5,9 @@ namespace Logger.Tests;
 
 public class IPersonTests
 {
-    private sealed record TestPerson(Guid Id, FullName Fullname) : IPerson
+    private sealed record TestPerson(Guid Id, FullName FullName) : IPerson
     {
-        public string Name => Fullname.Name;
+        public string Name => FullName.Name;
     }
 
     [Fact]
@@ -17,7 +17,7 @@ public class IPersonTests
         FullName name = new("Ryan", "Hirte", "A.");
         IPerson person = new TestPerson(id, name);
         Assert.Equal(id, person.Id);
-        Assert.Equal(name, person.Fullname);
+        Assert.Equal(name, person.FullName);
         Assert.Equal("Ryan A. Hirte", person.Name);
     }
 

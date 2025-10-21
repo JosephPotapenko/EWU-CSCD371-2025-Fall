@@ -15,10 +15,8 @@ public sealed record FullName
 
     public FullName(string first, string last, string? middle = null)
     {
-        if (string.IsNullOrWhiteSpace(first))
-            throw new ArgumentException("First name must not be empty", nameof(first));
-        if (string.IsNullOrWhiteSpace(last))
-            throw new ArgumentException("Last name must not be empty", nameof(last));
+        ArgumentException.ThrowIfNullOrWhiteSpace(first, nameof(first));
+        ArgumentException.ThrowIfNullOrWhiteSpace(last, nameof(last));
 
         First = first.Trim();
         Last = last.Trim();
