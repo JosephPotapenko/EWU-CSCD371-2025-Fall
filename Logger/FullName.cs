@@ -25,7 +25,7 @@ public sealed record FullName
         Middle = middle is null ? null : middle.Trim();
     }
 
-    // displaying using turnary to handle optional middle name
+    // displaying using ternary to handle optional middle name
     public string Name => Middle is null ? $"{First} {Last}" : $"{First} {Middle} {Last}";
 }
 
