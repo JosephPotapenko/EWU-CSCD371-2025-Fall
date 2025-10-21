@@ -1,6 +1,6 @@
 ﻿namespace Logger;
 
-public record Student : IEntity
+public record Student : IPerson
 {
     // Defined Id implicitly because if a student has the same name as another, they are still different students,
     // So there should be a unique identifier available to the system.

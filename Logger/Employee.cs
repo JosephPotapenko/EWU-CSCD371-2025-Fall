@@ -1,6 +1,6 @@
 ﻿namespace Logger;
 
-public record Employee : IEntity
+public record Employee : IPerson
 {
     // Defined Id implicitly because if an employee has the same name as another, they are still different employees,
     // So there should be a unique identifier available to the system.
