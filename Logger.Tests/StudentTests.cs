@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using Xunit;
+﻿using Xunit;
 
 namespace Logger.Tests;
 
@@ -16,7 +15,7 @@ public class StudentTests
         // Assert
         Assert.NotNull(student);
         Assert.Equal(id, student.Id);
-        Assert.Equal(name, student.Fullname);
+        Assert.Equal(name, student.FullName);
     }
 
     [Fact]
