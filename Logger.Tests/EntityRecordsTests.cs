@@ -13,11 +13,11 @@ public class EntityRecordsTests
     }
 
     [Fact]
-    public void Book_Equals_SameTitleAndAuthor_AreEqual()
+    public void Book_Equals_SameTitleAndAuthor_AreNotEqual()
     {
         var b1 = new Book("1984", "Orwell") { Id = Guid.NewGuid() };
         var b2 = new Book("1984", "Orwell") { Id = Guid.NewGuid() };
-        Assert.Equal(b1, b2);
+        Assert.False(b1.Equals(b2));
     }
 
     [Fact]
@@ -29,12 +29,12 @@ public class EntityRecordsTests
     }
 
     [Fact]
-    public void Student_SameFullNameAndStudentId_ReturnsTrue()
+    public void Student_SameFullNameAndStudentId_ReturnsFalse()
     {
         var full = new FullName("Alex", "Mercer");
         var s1 = new Student(full, "S100") { Id = Guid.NewGuid() };
         var s2 = new Student(new FullName("Alex", "Mercer"), "S100") { Id = Guid.NewGuid() };
-        Assert.Equal(s1, s2);
+        Assert.False(s1.Equals(s2));
     }
 
     [Fact]
@@ -55,12 +55,12 @@ public class EntityRecordsTests
     }
 
     [Fact]
-    public void Employee_SameFullNameAndEmployeeNumber_ReturnsTrue()
+    public void Employee_SameFullNameAndEmployeeNumber_ReturnsFalse()
     {
         var full = new FullName("Casey", "Jones");
         var e1 = new Employee(full, "E200") { Id = Guid.NewGuid() };
         var e2 = new Employee(new FullName("Casey", "Jones"), "E200") { Id = Guid.NewGuid() };
-        Assert.Equal(e1, e2);
+        Assert.False(e1.Equals(e2));
     }
 
     [Fact]

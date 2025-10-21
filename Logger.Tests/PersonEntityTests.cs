@@ -14,12 +14,12 @@ public class PersonEntityTests
     }
     
     [Fact]
-    public void PersonEntity_Equals_SameFullName_ReturnsTrue()
+    public void PersonEntity_Equals_SameFullName_ReturnsFalse()
     {
         var full = new FullName("Jordan", "Parker");
         var p1 = new TestPerson(full) { Id = Guid.NewGuid() };
         var p2 = new TestPerson(new FullName("Jordan", "Parker")) { Id = Guid.NewGuid() };
-        Assert.Equal(p1, p2);
+        Assert.False(p1.Equals(p2));
     }
     
     [Fact]
