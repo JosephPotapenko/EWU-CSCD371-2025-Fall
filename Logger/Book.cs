@@ -15,8 +15,8 @@ public record Book : IEntity
         ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
         Id = id;
         Title = title.Trim();
-        Author = author;
-        ISBN = isbn;
+        Author = string.IsNullOrWhiteSpace(author) ? null : author.Trim();
+        ISBN = string.IsNullOrWhiteSpace(isbn) ? null : isbn.Trim();
     }
 
     // Name is defined implicitly because it will always include a title, and may optionally include author and ISBN.

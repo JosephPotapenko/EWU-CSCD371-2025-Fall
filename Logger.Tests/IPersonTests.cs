@@ -31,7 +31,7 @@ public class IPersonTests
     }
 
     [Fact]
-    public void IPerson_SamePerson_IsEqual()
+    public void IPerson_SameValues_IsEqual()
     {
         Guid id = Guid.NewGuid();
         FullName name = new("Inigo", "Montoya");
