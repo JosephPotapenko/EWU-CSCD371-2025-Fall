@@ -35,6 +35,22 @@ public class BookTests
     }
 
     [Fact]
+    public void Constructor_ExtraWhitespaceParams_ShouldTrimParams()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var title = "  Sample Title  ";
+        var author = "  Sample Author  ";
+        var isbn = "  1234567890  ";
+        // Act
+        Book book = new(id, title, author, isbn);
+        // Assert
+        Assert.Equal("Sample Title", book.Title);
+        Assert.Equal("Sample Author", book.Author);
+        Assert.Equal("1234567890", book.ISBN);
+    }
+
+    [Fact]
     public void title_should_be_trimmed()
     {
         // Arrange
