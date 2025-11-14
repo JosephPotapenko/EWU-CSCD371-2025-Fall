@@ -1,72 +1,90 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Assignment;
 
 public class SampleData : ISampleData
 {
-    """
-    1. Implement the `ISampleData.CsvRows` property, loading the data from the `People.csv` file and returning each line as a single string. ❌✔
-    - Change the "Copy to" property on People.csv to "Copy if newer" so that the file is deployed along with your test project. ❌✔
-    - Using LINQ, skip the first row in the `People.csv`. ❌✔
-    - Be sure to appropriately handle resource (`IDisposable`) items correctly if applicable(and it may not be depending on how you implement it). ❌✔
-    """
-    public IEnumerable<string> CsvRows => throw new NotImplementedException();
+    // 1. 
+    public IEnumerable<string> CsvRows
+    {
+        get
+        {
+            string baseDir = AppContext.BaseDirectory;
+            string csvPath = Path.Combine(baseDir, "People.csv");
+            if (!File.Exists(csvPath))
+            {
+                string probe = Path.Combine(baseDir, "..", "..", "..", "Assignment", "Assignment", "People.csv");
+                string candidate = Path.GetFullPath(probe);
+                if (File.Exists(candidate)) csvPath = candidate;
+                else throw new FileNotFoundException($"People.csv not found at '{csvPath}'.");
+            }
+            return [.. File.ReadLines(csvPath).Skip(1)];
+        }
+    }
 
 
 
-    """
-     2. Implement `IEnumerable<string> GetUniqueSortedListOfStatesGivenCsvRows()` to return a** sorted**, **unique** list of states. ❌✔
-    - Use `ISampleData.CsvRows` for your data source. ❌✔
-    - Don't forget the list should be unique. ❌✔
-    - Sort the list alphabetically. ❌✔
-    - Include a test that leverages a hardcoded list of addresses. ❌✔
-    - Include a test that uses LINQ to verify the data is sorted correctly (do not use a hardcoded list). ❌✔
-    """
-    public IEnumerable<string> GetUniqueSortedListOfStatesGivenCsvRows() 
-        => throw new NotImplementedException();
+    // 2. 
+    public IEnumerable<string> GetUniqueSortedListOfStatesGivenCsvRows()
+        => GetUniqueSortedListOfStates(CsvRows);
 
 
 
-    """
-    3. Implement `ISampleData.GetAggregateSortedListOfStatesUsingCsvRows()` to return a `string` that contains a **unique**, comma separated list of states. ❌✔
-    - Use `ISampleData.GetUniqueSortedListOfStatesGivenCsvRows()` for your data source. ❌✔
-    - Consider "selecting" only the states and calling `ToArray()` to retrieve an array of all the state names. ❌✔
-    - Given the array, consider using `string.Join` to combine the list into a single string. ❌✔
-    """
+    // 3. 
     public string GetAggregateSortedListOfStatesUsingCsvRows()
-        => throw new NotImplementedException();
+        => string.Join(", ", GetUniqueSortedListOfStatesGivenCsvRows());
 
 
 
-    """
-    4. Implement the `ISampleData.People` property to return all the items in `People.csv` as `Person` objects ❌✔
-    - Use `ISampleData.CsvRows` as the source of the data. ❌✔
-    - Sort the list by State, City, and Zip. ❌✔
-    - Be sure that `Person.Address` is also populated. ❌✔
-    - Adding null validation to all the `Person` and `Address` properties is **optional**.
-    - Consider using `ISampleData.CsvRows` in your test to verify your results. ❌✔
-    """
-    public IEnumerable<IPerson> People => throw new NotImplementedException();
+    // 4. 
+    public IEnumerable<IPerson> People => [.. CsvRows
+        .Select(ParsePerson)
+        .OrderBy(p => p.Address.State, StringComparer.OrdinalIgnoreCase)
+        .ThenBy(p => p.Address.City, StringComparer.OrdinalIgnoreCase)
+        .ThenBy(p => p.Address.Zip, StringComparer.OrdinalIgnoreCase)];
 
 
 
-    """
-    5. Implement `ISampleDate.FilterByEmailAddress(Predicate<string> filter)` to return a list of names where the email address matches the `filter`. ❌✔
-    - Use `ISampleData.People` for your data source. ❌✔
-    """
-    public IEnumerable<(string FirstName, string LastName)> FilterByEmailAddress(
-        Predicate<string> filter) => throw new NotImplementedException();
+    // 5. 
+    public IEnumerable<(string FirstName, string LastName)> FilterByEmailAddress(Predicate<string> filter)
+        => [.. People.Where(p => filter(p.EmailAddress)).Select(p => (p.FirstName, p.LastName))];
 
 
 
-    """
-    6. Implement `ISampleData.GetAggregateListOfStatesGivenPeopleCollection(IEnumerable<IPerson> people)` to return a `string` that contains a **unique**, comma-separated list of states. ❌✔
-    - Use the `people` parameter from `ISampleData.People` property for your data source. ❌✔
-    - At a minimum, use the `System.Linq.Enumerable.`Aggregate` LINQ method to create your result. ❌✔
-    - Don't forget the list should be unique. ❌✔
-    - It is recommended that, at a minimum, you use `ISampleData.GetUniqueSortedListOfStatesGivenCsvRows` to validate your result.
-    """
-    public string GetAggregateListOfStatesGivenPeopleCollection(
-        IEnumerable<IPerson> people) => throw new NotImplementedException();
+    // 6. 
+    public string GetAggregateListOfStatesGivenPeopleCollection(IEnumerable<IPerson> people)
+    {
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+        string[] ordered = [.. people.Select(p => p.Address.State)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Where(s => seen.Add(s))];
+        return ordered.Aggregate(string.Empty, (acc, s) => string.IsNullOrEmpty(acc) ? s : $"{acc}, {s}");
+    }
+
+    // --- Helper methods ---
+    private static IPerson ParsePerson(string csv)
+    {
+        string[] parts = csv.Split(',', StringSplitOptions.None);
+        if (parts.Length < 8)
+            throw new FormatException($"Invalid CSV row: {csv}");
+        string first = parts[1].Trim();
+        string last = parts[2].Trim();
+        string email = parts[3].Trim();
+        string street = parts[4].Trim();
+        string city = parts[5].Trim();
+        string state = parts[6].Trim();
+        string zip = parts[7].Trim();
+        return new Person(first, last, new Address(street, city, state, zip), email);
+    }
+
+    public static IEnumerable<string> GetUniqueSortedListOfStates(IEnumerable<string> rows)
+        => [.. rows.Select(r => r.Split(',', StringSplitOptions.None))
+               .Where(parts => parts.Length >= 7)
+               .Select(parts => parts[6].Trim())
+               .Where(s => !string.IsNullOrWhiteSpace(s))
+               .Distinct(StringComparer.OrdinalIgnoreCase)
+               .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)];
 }
