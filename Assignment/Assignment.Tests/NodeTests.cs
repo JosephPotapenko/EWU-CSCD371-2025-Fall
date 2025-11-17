@@ -225,7 +225,9 @@ public class NodeTests
         List<int> result = n1.ChildItems(5).ToList();
 
         // Assert
-        CollectionAssert.AreEqual(new List<int> { 3, 2 }, result);
+        int[] expected = [3, 2];
+        Assert.HasCount(expected.Length, result);
+        Assert.IsTrue(result.Zip(expected, (a, b) => a == b).All(match => match));
     }
 
     [TestMethod]
@@ -242,7 +244,9 @@ public class NodeTests
         List<int> result = n1.ChildItems(2).ToList();
 
         // Assert
-        CollectionAssert.AreEqual(new List<int> { 5, 4 }, result);
+        int[] expected = [5, 4];
+        Assert.HasCount(expected.Length, result);
+        Assert.IsTrue(result.Zip(expected, (a, b) => a == b).All(match => match));
     }
 
     [TestMethod]
@@ -255,8 +259,8 @@ public class NodeTests
         
         // Act
         List<int> result = n1.ChildItems(0).ToList();
-       
+
         // Assert
-        CollectionAssert.AreEqual(new List<int> { }, result);
+        Assert.IsEmpty(result);
     }
 }

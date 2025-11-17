@@ -15,7 +15,7 @@ public class CsvRowsTests
         Assert.IsTrue(File.Exists(path), "People.csv should be copied to output directory (Copy if newer).");
         string[] allLines = File.ReadAllLines(path);
         SampleData sample = new();
-        string[] rows = [.. sample.CsvRows];
+        string[] rows = sample.CsvRows.ToArray();
         Assert.HasCount(allLines.Length - 1, rows);
         string header = "Id,FirstName,LastName,Email,StreetAddress,City,State,Zip";
         Assert.AreNotEqual(header, rows[0]);

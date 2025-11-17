@@ -21,7 +21,7 @@ public class SampleData : ISampleData
                 if (File.Exists(candidate)) csvPath = candidate;
                 else throw new FileNotFoundException($"People.csv not found at '{csvPath}'.");
             }
-            return [.. File.ReadLines(csvPath).Skip(1)];
+            return File.ReadLines(csvPath).Skip(1).ToArray();
         }
     }
 
@@ -35,22 +35,25 @@ public class SampleData : ISampleData
 
     // 3. 
     public string GetAggregateSortedListOfStatesUsingCsvRows()
-        => string.Join(", ", GetUniqueSortedListOfStatesGivenCsvRows());
+    {
+        string[] states = GetUniqueSortedListOfStatesGivenCsvRows().ToArray();
+        return string.Join(", ", states);
+    }
 
 
 
     // 4. 
-    public IEnumerable<IPerson> People => [.. CsvRows
+    public IEnumerable<IPerson> People => CsvRows
         .Select(ParsePerson)
         .OrderBy(p => p.Address.State, StringComparer.OrdinalIgnoreCase)
         .ThenBy(p => p.Address.City, StringComparer.OrdinalIgnoreCase)
-        .ThenBy(p => p.Address.Zip, StringComparer.OrdinalIgnoreCase)];
+        .ThenBy(p => p.Address.Zip, StringComparer.OrdinalIgnoreCase).ToArray();
 
 
 
     // 5. 
     public IEnumerable<(string FirstName, string LastName)> FilterByEmailAddress(Predicate<string> filter)
-        => [.. People.Where(p => filter(p.EmailAddress)).Select(p => (p.FirstName, p.LastName))];
+        =>  People.Where(p => filter(p.EmailAddress)).Select(p => (p.FirstName, p.LastName)).ToArray();
 
 
 
@@ -58,9 +61,9 @@ public class SampleData : ISampleData
     public string GetAggregateListOfStatesGivenPeopleCollection(IEnumerable<IPerson> people)
     {
         HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
-        string[] ordered = [.. people.Select(p => p.Address.State)
+        string[] ordered = people.Select(p => p.Address.State)
             .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Where(s => seen.Add(s))];
+            .Where(s => seen.Add(s)).ToArray();
         return ordered.Aggregate(string.Empty, (acc, s) => string.IsNullOrEmpty(acc) ? s : $"{acc}, {s}");
     }
 
@@ -81,10 +84,10 @@ public class SampleData : ISampleData
     }
 
     public static IEnumerable<string> GetUniqueSortedListOfStates(IEnumerable<string> rows)
-        => [.. rows.Select(r => r.Split(',', StringSplitOptions.None))
+        => rows.Select(r => r.Split(',', StringSplitOptions.None))
                .Where(parts => parts.Length >= 7)
                .Select(parts => parts[6].Trim())
                .Where(s => !string.IsNullOrWhiteSpace(s))
                .Distinct(StringComparer.OrdinalIgnoreCase)
-               .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)];
+               .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToArray();
 }

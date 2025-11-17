@@ -21,18 +21,18 @@ public class SampleDataTests
             "4,Alice,Brown,alice@test.com,321 Elm,Eugene,OR,97401"
         ];
         IEnumerable<string> result = SampleData.GetUniqueSortedListOfStates(csvRows);
-        string[] states = [.. result];
+        string[] states = result.ToArray();
         Assert.HasCount(2, states);
-        CollectionAssert.AreEqual(expected, states);
+        Assert.IsTrue(states.Zip(expected, (a, b) => a == b).All(match => match));
     }
 
     [TestMethod]
     public void GetUniqueSortedListOfStatesGivenCsvRows_ActualData_VerifiesSortedAndUnique()
     {
         SampleData sample = new();
-        string[] states = [.. sample.GetUniqueSortedListOfStatesGivenCsvRows()];
-        string[] sortedStates = [.. states.OrderBy(s => s, StringComparer.OrdinalIgnoreCase)];
-        CollectionAssert.AreEqual(sortedStates, states);
+        string[] states = sample.GetUniqueSortedListOfStatesGivenCsvRows().ToArray();
+        string[] sortedStates = states.OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToArray();
+        Assert.IsTrue(states.Zip(sortedStates, (a, b) => a == b).All(match => match));
         int distinctCount = states.Distinct(StringComparer.OrdinalIgnoreCase).Count();
         Assert.HasCount(distinctCount, states);
     }
@@ -45,30 +45,30 @@ public class SampleDataTests
         Assert.IsFalse(string.IsNullOrWhiteSpace(result));
         Assert.Contains(", ", result);
         string[] states = result.Split(", ", StringSplitOptions.RemoveEmptyEntries);
-        string[] sortedStates = [.. states.OrderBy(s => s, StringComparer.OrdinalIgnoreCase)];
-        CollectionAssert.AreEqual(sortedStates, states);
+        string[] sortedStates = states.OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToArray();
+        Assert.IsTrue(states.Zip(sortedStates, (a, b) => a == b).All(match => match));
     }
 
     [TestMethod]
     public void People_ActualData_ReturnsSortedByStateAndCityAndZip()
     {
         SampleData sample = new();
-        IPerson[] people = [.. sample.People];
+        IPerson[] people = sample.People.ToArray();
         Assert.IsNotEmpty(people);
         Assert.IsTrue(people.All(p => p.Address != null));
-        IPerson[] manualSort = [.. people
+        IPerson[] manualSort = people
             .OrderBy(p => p.Address.State, StringComparer.OrdinalIgnoreCase)
             .ThenBy(p => p.Address.City, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(p => p.Address.Zip, StringComparer.OrdinalIgnoreCase)];
+            .ThenBy(p => p.Address.Zip, StringComparer.OrdinalIgnoreCase).ToArray();
 
-        CollectionAssert.AreEqual(manualSort, people);
+        Assert.IsTrue(people.Zip(manualSort, (a, b) => ReferenceEquals(a, b)).All(match => match));
     }
 
     [TestMethod]
     public void People_ActualData_AddressPropertiesPopulated()
     {
         SampleData sample = new();
-        IPerson[] people = [.. sample.People];
+        IPerson[] people = sample.People.ToArray();
 
         foreach (IPerson person in people)
         {
@@ -89,9 +89,9 @@ public class SampleDataTests
         SampleData sample = new();
         IEnumerable<(string FirstName, string LastName)> result =
             sample.FilterByEmailAddress(email => email.EndsWith("@stanford.edu", StringComparison.OrdinalIgnoreCase));
-        (string FirstName, string LastName)[] matches = [.. result];
-        IPerson[] allPeople = [.. sample.People];
-        IPerson[] expectedMatches = [.. allPeople.Where(p => p.EmailAddress.EndsWith("@stanford.edu", StringComparison.OrdinalIgnoreCase))];
+        (string FirstName, string LastName)[] matches = result.ToArray();
+        IPerson[] allPeople = sample.People.ToArray();
+        IPerson[] expectedMatches = allPeople.Where(p => p.EmailAddress.EndsWith("@stanford.edu", StringComparison.OrdinalIgnoreCase)).ToArray();
         Assert.HasCount(expectedMatches.Length, matches);
 
         foreach ((string FirstName, string LastName) in matches)
@@ -107,7 +107,7 @@ public class SampleDataTests
         IEnumerable<(string FirstName, string LastName)> result =
             sample.FilterByEmailAddress(email => email.Contains(".gov", StringComparison.OrdinalIgnoreCase));
 
-        (string FirstName, string LastName)[] matches = [.. result];
+        (string FirstName, string LastName)[] matches = result.ToArray();
         Assert.IsNotEmpty(matches);
     }
 
@@ -115,12 +115,15 @@ public class SampleDataTests
     public void GetAggregateListOfStatesGivenPeopleCollection_ActualPeople_ReturnsUniqueCommaSeparated()
     {
         SampleData sample = new();
-        IPerson[] people = [.. sample.People];
+        IPerson[] people = sample.People.ToArray();
         string result = sample.GetAggregateListOfStatesGivenPeopleCollection(people);
         Assert.IsFalse(string.IsNullOrWhiteSpace(result));
         string[] states = result.Split(", ", StringSplitOptions.RemoveEmptyEntries);
         int distinctCount = states.Distinct(StringComparer.OrdinalIgnoreCase).Count();
         Assert.HasCount(distinctCount, states);
+
+        string[] expectedStates = sample.GetUniqueSortedListOfStatesGivenCsvRows().ToArray();
+        Assert.IsTrue(states.All(s => expectedStates.Contains(s, StringComparer.OrdinalIgnoreCase)));
     }
 
     [TestMethod]
@@ -136,6 +139,6 @@ public class SampleDataTests
 
         SampleData sample = new();
         string result = sample.GetAggregateListOfStatesGivenPeopleCollection(testPeople);
-        Assert.AreEqual("WA, OR, CA", result);
+        Assert.AreEqual<string>("WA, OR, CA", result);
     }
 }
