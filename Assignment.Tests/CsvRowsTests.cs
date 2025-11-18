@@ -27,7 +27,7 @@ public class CsvRowsTests
         string path = Path.Combine(AppContext.BaseDirectory, "People.csv");
         Assert.IsTrue(File.Exists(path));
         SampleData sample = new();
-        sample.CsvRows.ToArray();
+        string[] rows = sample.CsvRows.ToArray();
         using FileStream stream = new(path, FileMode.Append, FileAccess.Write, FileShare.None);
         Assert.IsTrue(stream.CanWrite);
     }
