@@ -16,10 +16,7 @@ public class SampleData : ISampleData
             string csvPath = Path.Combine(baseDir, "People.csv");
             if (!File.Exists(csvPath))
             {
-                string probe = Path.Combine(baseDir, "..", "..", "..", "Assignment", "Assignment", "People.csv");
-                string candidate = Path.GetFullPath(probe);
-                if (File.Exists(candidate)) csvPath = candidate;
-                else throw new FileNotFoundException($"People.csv not found at '{csvPath}'.");
+                throw new FileNotFoundException($"People.csv not found at '{csvPath}'.");
             }
             return File.ReadLines(csvPath).Skip(1).ToArray();
         }
@@ -29,7 +26,7 @@ public class SampleData : ISampleData
 
     // 2. 
     public IEnumerable<string> GetUniqueSortedListOfStatesGivenCsvRows()
-        => GetUniqueSortedListOfStates(CsvRows);
+        => GetUniqueSortedListOfStates(CsvRows).ToArray();
 
 
 
