@@ -520,4 +520,35 @@ public class NodeTests
         Assert.IsEmpty(result);
     }
 
+    [TestMethod]
+    public void GetEnumerator_IteratingThroughNode_ReturnsAllItemsInOrder()
+    {
+        // Arrange
+        Node<int> n1 = new Node<int>(1);
+        n1.Append(2);
+        n1.Append(3);
+
+        // Act
+        List<int> result = n1.ToList();
+
+        // Assert
+        int[] expected = [1, 2, 3];
+        Assert.HasCount(expected.Length, result);
+        Assert.IsTrue(result.Zip(expected, (a, b) => a == b).All(match => match));
+    }
+
+    [TestMethod]
+    public void ChildItems_EmptyNode_ReturnsEmptyCollection()
+    {
+        // Arrange
+        Node<int> n1 = new Node<int>(1);
+        n1.Append(2);
+        n1.Clear(); 
+
+        // Act
+        List<int> result = n1.ChildItems(5).ToList();
+
+        // Assert
+        Assert.IsEmpty(result);
+    }
 }
