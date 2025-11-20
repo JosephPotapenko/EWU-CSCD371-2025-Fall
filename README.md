@@ -46,7 +46,7 @@ Chapter 14: Events
 
 ## Instructions
 
-**Throughout, consider using the `System.Linq.Enumerable` methods `Zip`, `Count`, `Sort` and `Contains` methods for testing collections.**. (Preferably avoid using `Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert` although that might be easier, to get a firmer grasp on additional LINQ API.) ❌
+**Throughout, consider using the `System.Linq.Enumerable` methods `Zip`, `Count`, `Sort` and `Contains` methods for testing collections.**. (Preferably avoid using `Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert` although that might be easier, to get a firmer grasp on additional LINQ API.) ✔ (It was a consideration and not a rule, so some places I did implement linq, some other places I didn't. Might still change this.)
 
 1. Implement the `ISampleData.CsvRows` property, loading the data from the `People.csv` file and returning each line as a single string. ✔
 
@@ -62,10 +62,10 @@ Chapter 14: Events
    - Include a test that leverages a hardcoded list of addresses. ✔
    - Include a test that uses LINQ to verify the data is sorted correctly (do not use a hardcoded list). ✔
 
-3. Implement `ISampleData.GetAggregateSortedListOfStatesUsingCsvRows()` to return a `string` that contains a **unique**, comma separated list of states. ❌
+3. Implement `ISampleData.GetAggregateSortedListOfStatesUsingCsvRows()` to return a `string` that contains a **unique**, comma separated list of states. ✔
 
    - Use `ISampleData.GetUniqueSortedListOfStatesGivenCsvRows()` for your data source. ✔
-   - Consider "selecting" only the states and calling `ToArray()` to retrieve an array of all the state names. ❌
+   - Consider "selecting" only the states and calling `ToArray()` to retrieve an array of all the state names. ✔
    - Given the array, consider using `string.Join` to combine the list into a single string. ✔
 
 4. Implement the `ISampleData.People` property to return all the items in `People.csv` as `Person` objects ✔
@@ -85,12 +85,12 @@ Chapter 14: Events
    - Use the `people` parameter from `ISampleData.People` property for your data source. ✔
    - At a minimum, use the `System.Linq.Enumerable.`Aggregate` LINQ method to create your result. ✔
    - Don't forget the list should be unique. ✔
-   - It is recommended that, at a minimum, you use `ISampleData.GetUniqueSortedListOfStatesGivenCsvRows` to validate your result. ❌
+   - It is recommended that, at a minimum, you use `ISampleData.GetUniqueSortedListOfStatesGivenCsvRows` to validate your result. ✔
 
-7. Given the implementation of `Node` in Assignment5 ❌
+7. Given the implementation of `Node` in Assignment5 ✔
 
-- Implement `IEnumerable<T>` to return all the items in the "circle" of items. ❌
-- Add an `IEnumerable<T> ChildItems(int maximum)` method to `Node` that returns the remaining items with a maximum number of items returned less than `maximum`. ❌
+- Implement `IEnumerable<T>` to return all the items in the "circle" of items. ✔
+- Add an `IEnumerable<T> ChildItems(int maximum)` method to `Node` that returns the remaining items with a maximum number of items returned less than `maximum`. ✔
 
 ## Extra Credit
 
@@ -104,7 +104,7 @@ Chapter 14: Events
 - Ensure that you turn on code analysis for all projects(EnableNETAnalyzers) ✔
 - Set `LangVersion` and the `TargetFramework` to the latest released versions available (preview versions optional) ✔
 - and enabled .NET analyzers for both projects ✔
-- For this assignment, consider using `Assert.AreEqual<T>()` (the generic version) ⚠️
+- For this assignment, consider using `Assert.AreEqual<T>()` (the generic version) 
 - All of the above should be unit tested ✔
 - Choose simplicity over complexity ✔
 
