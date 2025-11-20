@@ -12,7 +12,7 @@ public class NodeTests
     [TestMethod]
     public void NewNode_HasSelfLoopInNext()
     {
-        var n = new Node<int>(42);
+        Node<int> n = new Node<int>(42);
         Assert.IsNotNull(n.Next);
         Assert.AreSame(n, n.Next);
     }
@@ -20,28 +20,29 @@ public class NodeTests
     [TestMethod]
     public void ToString_DelegatesToValueToString_ForValueTypes()
     {
-        var n = new Node<int>(123);
+        Node<int> n = new Node<int>(123);
+        if (n == null) throw new ArgumentNullException(nameof(n));
         Assert.AreEqual<string>("123", n.ToString());
     }
 
     [TestMethod]
     public void ToString_HandlesNullableReferenceValue()
     {
-        var n = new Node<string?>(null);
+        Node<string?> n = new Node<string?>(null);
         Assert.AreEqual<string>(string.Empty, n.ToString());
     }
 
     [TestMethod]
     public void Next_HasPrivateSetter()
     {
-        var n = new Node<int>(1);
+        Node<int> n = new Node<int>(1);
         Assert.AreSame(n, n.Next);
     }
 
     [TestMethod]
     public void Append_AddsNewNodeAfterCurrentNode_Success()
     {
-        var n1 = new Node<string>("first");
+        Node<string> n1 = new Node<string>("first");
         n1.Append("second");
         Assert.AreEqual("second", n1.Next.ToString());
         Assert.AreSame(n1, n1.Next.Next);
@@ -263,4 +264,260 @@ public class NodeTests
         // Assert
         Assert.IsEmpty(result);
     }
+
+    [TestMethod]
+    public void Count_SingleNode_ReturnsOne()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        if (n == null) throw new ArgumentNullException(nameof(n));
+
+        // Act
+        int count = n.Count;
+
+        // Assert
+        Assert.AreEqual(1, count);
+    }
+
+    [TestMethod]
+    public void Count_MultipleNodes_ReturnsNumberOfNodes()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+
+        // Act
+        int count = n.Count;
+
+        // Assert
+        Assert.AreEqual(3, count);
+    }
+
+    [TestMethod]
+    public void Count_AfterClear_ReturnsZero()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+        n.Clear();
+
+        // Act
+        int count = n.Count;
+
+        // Assert
+        Assert.AreEqual(0, count);
+    }
+
+    [TestMethod]
+    public void IsReadOnly_Always_ReturnsFalse()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        if (n == null) throw new ArgumentNullException(nameof(n));
+
+        // Act
+        bool isReadOnly = n.IsReadOnly;
+
+        // Assert
+        Assert.IsFalse(isReadOnly);
+    }
+
+    [TestMethod]
+    public void ICollectionAdd_AddsItem_AppendsAfterHead()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        ICollection<int> collection = n;
+
+        // Act
+        collection.Add(2);
+
+        // Assert
+        int[] result = [.. n];
+        int[] expected = [1, 2];
+        Assert.HasCount(expected.Length, result);
+        Assert.IsTrue(result.Zip(expected, (a, b) => a == b).All(match => match));
+    }
+
+    [TestMethod]
+    public void Contains_ValuePresent_ReturnsTrue()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+
+        // Act
+        bool contains = n.Contains(2);
+
+        // Assert
+        Assert.IsTrue(contains);
+    }
+
+    [TestMethod]
+    public void Contains_ValueMissing_ReturnsFalse()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+
+        // Act
+        bool contains = n.Contains(4);
+
+        // Assert
+        Assert.IsFalse(contains);
+    }
+
+    [TestMethod]
+    public void CopyTo_NullArray_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        if (n == null) throw new ArgumentNullException(nameof(n));
+
+        // Act
+        void Act() => n.CopyTo(null!, 0);
+
+        // Assert
+        Assert.ThrowsExactly<ArgumentNullException>(Act);
+    }
+
+    [TestMethod]
+    public void CopyTo_NegativeIndex_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        if (n == null) throw new ArgumentNullException(nameof(n));
+        int[] array = new int[3];
+
+        // Act
+        void Act() => n.CopyTo(array, -1);
+
+        // Assert
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(Act);
+    }
+
+    [TestMethod]
+    public void CopyTo_InsufficientSpace_ThrowsArgumentException()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+        int[] array = new int[2]; 
+
+        // Act
+        void Act() => n.CopyTo(array, 0);
+
+        // Assert
+        Assert.ThrowsExactly<ArgumentException>(Act);
+    }
+
+    [TestMethod]
+    public void CopyTo_ValidArray_CopiesAllElementsInLogicalOrder()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+        int[] array = new int[3];
+
+        // Act
+        n.CopyTo(array, 0);
+
+        // Assert
+        int[] expected = [1, 2, 3];
+        Assert.HasCount(expected.Length, array);
+        Assert.IsTrue(array.Zip(expected, (a, b) => a == b).All(match => match));
+    }
+
+    [TestMethod]
+    public void Remove_SingleNode_RemovesAndMarksEmpty()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+
+        // Act
+        bool removed = n.Remove(1);
+
+        // Assert
+        Assert.IsTrue(removed);
+        Assert.AreEqual(0, n.Count);
+        Assert.AreEqual(string.Empty, n.ToString()); 
+    }
+
+    [TestMethod]
+    public void Remove_ExistingMiddleNode_ReturnsTrueAndRemovesNode()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3); 
+
+        // Act
+        bool removed = n.Remove(2);
+
+        // Assert
+        Assert.IsTrue(removed);
+        int[] result = [.. n];
+        int[] expected = [1, 3];
+        Assert.HasCount(expected.Length, result);
+        Assert.IsTrue(result.Zip(expected, (a, b) => a == b).All(match => match));
+    }
+
+    [TestMethod]
+    public void Remove_MissingValue_ReturnsFalseAndListUnchanged()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+        int[] original = [.. n];
+
+        // Act
+        bool removed = n.Remove(4);
+
+        // Assert
+        Assert.IsFalse(removed);
+        int[] result = [.. n];
+        Assert.HasCount(original.Length, result);
+        Assert.IsTrue(result.Zip(original, (a, b) => a == b).All(match => match));
+    }
+
+    [TestMethod]
+    public void GetEnumerator_MultipleNodes_EnumeratesAllValuesInOrder()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+
+        // Act
+        List<int> result = n.ToList();
+
+        // Assert
+        int[] expected = [1, 2, 3];
+        Assert.HasCount(expected.Length, result);
+        Assert.IsTrue(result.Zip(expected, (a, b) => a == b).All(match => match));
+    }
+
+    [TestMethod]
+    public void GetEnumerator_AfterClear_YieldsNoElements()
+    {
+        // Arrange
+        Node<int> n = new Node<int>(1);
+        n.Append(2);
+        n.Append(3);
+        n.Clear();
+
+        // Act
+        List<int> result = n.ToList();
+
+        // Assert
+        Assert.IsEmpty(result);
+    }
+
 }
