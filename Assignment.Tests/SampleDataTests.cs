@@ -141,4 +141,13 @@ public class SampleDataTests
         string result = sample.GetAggregateListOfStatesGivenPeopleCollection(testPeople);
         Assert.AreEqual<string>("CA, OR, WA", result);
     }
+
+    [TestMethod]
+    public void GetAggregateListOfStatesGivenPeopleCollection_ActualPeople_MatchesGetUniqueSortedListOfStatesGivenCsvRows()
+    {
+        SampleData sample = new();
+        string result = sample.GetAggregateListOfStatesGivenPeopleCollection(sample.People);
+        string expected = sample.GetAggregateSortedListOfStatesUsingCsvRows();
+        Assert.AreEqual(expected, result);
+    }
 }
