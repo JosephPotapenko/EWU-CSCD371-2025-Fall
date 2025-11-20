@@ -139,6 +139,6 @@ public class SampleDataTests
 
         SampleData sample = new();
         string result = sample.GetAggregateListOfStatesGivenPeopleCollection(testPeople);
-        Assert.AreEqual<string>("WA, OR, CA", result);
+        Assert.AreEqual<string>("CA, OR, WA", result);
     }
 }

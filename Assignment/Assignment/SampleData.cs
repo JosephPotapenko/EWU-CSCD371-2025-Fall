@@ -57,11 +57,11 @@ public class SampleData : ISampleData
     // 6. 
     public string GetAggregateListOfStatesGivenPeopleCollection(IEnumerable<IPerson> people)
     {
-        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
-        string[] ordered = people.Select(p => p.Address.State)
+        IEnumerable<string> states = people.Select(p => p.Address.State)
             .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Where(s => seen.Add(s)).ToArray();
-        return ordered.Aggregate(string.Empty, (acc, s) => string.IsNullOrEmpty(acc) ? s : $"{acc}, {s}");
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase);
+        return states.Aggregate(string.Empty, (acc, s) => string.IsNullOrEmpty(acc) ? s : $"{acc}, {s}");
     }
 
     // --- Helper methods ---
