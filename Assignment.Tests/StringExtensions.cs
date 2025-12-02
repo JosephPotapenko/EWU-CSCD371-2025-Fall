@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
+#pragma warning disable
 namespace IntelliTect.TestTools;
 
 /// <summary>
@@ -33,3 +34,4 @@ public static class StringExtensions
     public static bool IsLike(this string text, string pattern, char escapeCharacter) =>
         new WildcardPattern(pattern, escapeCharacter).IsMatch(text);
 }
+#pragma warning restore
