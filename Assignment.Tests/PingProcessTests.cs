@@ -76,13 +76,12 @@ public class PingProcessTests
             "can't resolve",
             "badaddress"
         };
-#pragma warning disable CA2249
+
         bool containsKnownFragment = knownErrorFragments.Any(f =>
-            stdOutput.IndexOf(f, StringComparison.OrdinalIgnoreCase) >= 0);
+            stdOutput!.Contains(f, StringComparison.OrdinalIgnoreCase));
 
         Assert.IsTrue(containsKnownFragment, $"Output is unexpected: {stdOutput}");
         Assert.AreNotEqual<int>(0, exitCode);
-#pragma warning restore CA2249
     }
 
     [TestMethod]
