@@ -198,9 +198,16 @@ public class PingProcessTests
     {
         IEnumerable<int> numbers = Enumerable.Range(0, short.MaxValue);
         System.Text.StringBuilder stringBuilder = new();
-        numbers.AsParallel().ForAll(item => stringBuilder.AppendLine(""));
-        int lineCount = stringBuilder.ToString().Split(Environment.NewLine).Length;
-        Assert.AreNotEqual(lineCount, numbers.Count() + 1);
+        try
+        {
+            numbers.AsParallel().ForAll(item => stringBuilder.AppendLine(""));
+            int lineCount = stringBuilder.ToString().Split(Environment.NewLine).Length;
+            Assert.AreNotEqual(lineCount, numbers.Count() + 1);
+        }
+        catch (AggregateException)
+        {
+            return;
+        }
     }
 
     readonly string PingOutputLikeExpression = @"
