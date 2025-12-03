@@ -22,7 +22,19 @@ public class PingProcess
         }
 
         string trimmed = hostNameOrAddress.Trim();
-        return trimmed;
+        if (trimmed.IndexOfAny(new[] { ' ', '\t', '\r', '\n' }) >= 0)
+        {
+            throw new ArgumentException("Host name or address must be a single token without whitespace.", nameof(hostNameOrAddress));
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return $"-n 1 {trimmed}";
+        }
+        else
+        {
+            return $"-c 1 -w 5 {trimmed}";
+        }
     }
 
     public PingResult Run(string hostNameOrAddress)
