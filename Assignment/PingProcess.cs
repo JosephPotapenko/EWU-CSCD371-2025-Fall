@@ -14,9 +14,20 @@ public class PingProcess
 {
     private ProcessStartInfo StartInfo { get; } = new("ping");
 
+    private static string GetPingArguments(string hostNameOrAddress)
+    {
+        if (string.IsNullOrWhiteSpace(hostNameOrAddress))
+        {
+            throw new ArgumentException("Host name or address must not be null, empty, or whitespace.", nameof(hostNameOrAddress));
+        }
+
+        string trimmed = hostNameOrAddress.Trim();
+        return trimmed;
+    }
+
     public PingResult Run(string hostNameOrAddress)
     {
-        StartInfo.Arguments = hostNameOrAddress;
+        StartInfo.Arguments = GetPingArguments(hostNameOrAddress);
         StringBuilder? stringBuilder = null;
         void updateStdOutput(string? line) =>
             (stringBuilder ??= new StringBuilder()).AppendLine(line);
@@ -52,7 +63,7 @@ public class PingProcess
                 lines.Add(line);
                 (sb ??= new StringBuilder()).AppendLine(line);
             }
-            var info = new ProcessStartInfo("ping") { Arguments = address };
+            var info = new ProcessStartInfo("ping") { Arguments = GetPingArguments(address) };
             var process = RunProcessInternal(info, capture, null, default);
             return process.ExitCode;
         })).ToArray();
@@ -77,7 +88,7 @@ public class PingProcess
             (stringBuilder ??= new StringBuilder()).AppendLine(line);
         }
 
-        var startInfo = new ProcessStartInfo("ping") { Arguments = hostNameOrAddress };
+        var startInfo = new ProcessStartInfo("ping") { Arguments = GetPingArguments(hostNameOrAddress) };
         var task = Task.Factory.StartNew(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -117,7 +128,7 @@ public class PingProcess
                 if (line is null) return;
                 (sb ??= new StringBuilder()).AppendLine(line);
             }
-            var info = new ProcessStartInfo("ping") { Arguments = hostNameOrAddress };
+            var info = new ProcessStartInfo("ping") { Arguments = GetPingArguments(hostNameOrAddress) };
             var process = RunProcessInternal(info, capture, null, cancellationToken);
             return new PingResult(process.ExitCode, sb?.ToString());
         }, cancellationToken);
