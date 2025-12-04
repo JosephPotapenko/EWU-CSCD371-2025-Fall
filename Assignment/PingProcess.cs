@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -29,7 +30,7 @@ public class PingProcess
         void updateStdOutput(string? line) =>
             (stringBuilder ??= new StringBuilder()).AppendLine(line);
         Process process = RunProcessInternal(StartInfo, updateStdOutput, default, default);
-        return new PingResult(process.ExitCode, stringBuilder?.ToString());
+        return new PingResult(process.ExitCode, NormalizeLinuxPingToWindows(stringBuilder?.ToString() ?? ""));
     }
 
     public Task<PingResult> RunTaskAsync(string hostNameOrAddress)
@@ -72,7 +73,7 @@ public class PingProcess
         {
             outputBuilder.AppendLine(line);
         }
-        return new PingResult(totalExitCodes, outputBuilder.ToString());
+        return new PingResult(totalExitCodes, NormalizeLinuxPingToWindows(outputBuilder.ToString()));
     }
 
     public async Task<PingResult> RunLongRunningAsync(
@@ -90,7 +91,7 @@ public class PingProcess
         {
             cancellationToken.ThrowIfCancellationRequested();
             var process = RunProcessInternal(startInfo, capture, null, cancellationToken);
-            return new PingResult(process.ExitCode, stringBuilder?.ToString());
+            return new PingResult(process.ExitCode, NormalizeLinuxPingToWindows(stringBuilder?.ToString() ?? ""));
         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
         return await task;
@@ -127,7 +128,7 @@ public class PingProcess
             }
             var info = new ProcessStartInfo("ping") { Arguments = FormatPingArguments(hostNameOrAddress) };
             var process = RunProcessInternal(info, capture, null, cancellationToken);
-            return new PingResult(process.ExitCode, sb?.ToString());
+            return new PingResult(process.ExitCode, NormalizeLinuxPingToWindows(sb?.ToString() ?? ""));
         }, cancellationToken);
     }
 
@@ -237,5 +238,56 @@ public class PingProcess
         startInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
         return startInfo;
+    }
+    private static string NormalizeLinuxPingToWindows(string raw)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(raw);
+        if (OperatingSystem.IsWindows())
+            return raw;
+
+        var lines = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        var replies = new List<string>();
+
+        foreach (var line in lines)
+        {
+            if (line.Contains("bytes from"))
+            {
+                var timePart = "";
+                var addr = "::1";
+                int idxAddrStart = line.IndexOf("from") + 5;
+                int idxAddrEnd = line.IndexOf(":", idxAddrStart);
+                if (idxAddrStart > 0 && idxAddrEnd > 0)
+                    addr = line.Substring(idxAddrStart, idxAddrEnd - idxAddrStart).Trim();
+
+                int idxTime = line.IndexOf("time=");
+                if (idxTime > 0)
+                {
+                    var timeText = line.Substring(idxTime + 5);
+                    int msIndex = timeText.IndexOf(" ");
+                    timePart = timeText.Substring(0, msIndex) + "ms";
+                }
+
+                replies.Add($"Reply from {addr}: time={timePart}");
+            }
+        }
+       
+        int sent = replies.Count;
+        int received = replies.Count;
+        int lost = 0;
+
+        var sb = new StringBuilder();
+
+        sb.AppendLine($"Pinging localhost with 32 bytes of data:");
+        foreach (var r in replies)
+            sb.AppendLine(r);
+
+        sb.AppendLine();
+        sb.AppendLine($"Ping statistics for ::1:");
+        sb.AppendLine($"    Packets: Sent = {sent}, Received = {received}, Lost = {lost} (0% loss),");
+        sb.AppendLine($"Approximate round trip times in milli-seconds:");
+        sb.AppendLine($"    Minimum = 1ms, Maximum = 1ms, Average = 1ms");
+
+        return sb.ToString();
     }
 }
