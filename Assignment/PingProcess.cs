@@ -12,13 +12,23 @@ public record struct PingResult(int ExitCode, string? StdOutput);
 
 public class PingProcess
 {
+    private ProcessStartInfo StartInfo { get; } = new("ping");
+
+    private static string FormatPingArguments(string host)
+    {
+        if (OperatingSystem.IsWindows())
+            return $"-n 4 {host}";
+        else
+            return $"-c 4 {host}";
+    }
+
     public PingResult Run(string hostNameOrAddress)
     {
-        var startInfo = new ProcessStartInfo("ping") { Arguments = hostNameOrAddress };
+        StartInfo.Arguments = FormatPingArguments(hostNameOrAddress);
         StringBuilder? stringBuilder = null;
         void updateStdOutput(string? line) =>
             (stringBuilder ??= new StringBuilder()).AppendLine(line);
-        Process process = RunProcessInternal(startInfo, updateStdOutput, default, default);
+        Process process = RunProcessInternal(StartInfo, updateStdOutput, default, default);
         return new PingResult(process.ExitCode, stringBuilder?.ToString());
     }
 
@@ -30,17 +40,18 @@ public class PingProcess
     public async Task<PingResult> RunAsync(
         string hostNameOrAddress, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() =>
+        PingResult result = await Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Run(hostNameOrAddress);
         }, cancellationToken);
+        return result;
     }
 
     public async Task<PingResult> RunAsync(params string[] hostNameOrAddresses)
     {
         var lines = new System.Collections.Concurrent.ConcurrentBag<string>();
-        var tasks = hostNameOrAddresses.Select(address => Task.Run(() =>
+        var tasks = hostNameOrAddresses.AsParallel().Select(address => Task.Run(() =>
         {
             StringBuilder? sb = null;
             void capture(string? line)
@@ -49,13 +60,12 @@ public class PingProcess
                 lines.Add(line);
                 (sb ??= new StringBuilder()).AppendLine(line);
             }
-            var info = new ProcessStartInfo("ping") { Arguments = address };
+            var info = new ProcessStartInfo("ping") { Arguments = FormatPingArguments(address) };
             var process = RunProcessInternal(info, capture, null, default);
             return process.ExitCode;
         })).ToArray();
 
-        await Task.WhenAll(tasks).ConfigureAwait(false);
-
+        await Task.WhenAll(tasks);
         int totalExitCodes = tasks.Sum(t => t.Result);
         var outputBuilder = new StringBuilder();
         foreach (var line in lines)
@@ -75,15 +85,15 @@ public class PingProcess
             (stringBuilder ??= new StringBuilder()).AppendLine(line);
         }
 
-        var startInfo = new ProcessStartInfo("ping") { Arguments = hostNameOrAddress };
+        var startInfo = new ProcessStartInfo("ping") { Arguments = FormatPingArguments(hostNameOrAddress) };
         var task = Task.Factory.StartNew(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
             var process = RunProcessInternal(startInfo, capture, null, cancellationToken);
             return new PingResult(process.ExitCode, stringBuilder?.ToString());
-        }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
-        return await task.ConfigureAwait(false);
+        return await task;
     }
 
     public Task<int> RunLongRunningAsync(
@@ -97,7 +107,7 @@ public class PingProcess
             token.ThrowIfCancellationRequested();
             var process = RunProcessInternal(startInfo, progressOutput, progressError, token);
             return process.ExitCode;
-        }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }, token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
     }
 
     public Task<PingResult> RunAsync(
@@ -115,7 +125,7 @@ public class PingProcess
                 if (line is null) return;
                 (sb ??= new StringBuilder()).AppendLine(line);
             }
-            var info = new ProcessStartInfo("ping") { Arguments = hostNameOrAddress };
+            var info = new ProcessStartInfo("ping") { Arguments = FormatPingArguments(hostNameOrAddress) };
             var process = RunProcessInternal(info, capture, null, cancellationToken);
             return new PingResult(process.ExitCode, sb?.ToString());
         }, cancellationToken);
@@ -144,15 +154,14 @@ public class PingProcess
         process.OutputDataReceived += OutputHandler;
         process.ErrorDataReceived += ErrorHandler;
 
-        CancellationTokenRegistration? registration = null;
-
         try
         {
             if (!process.Start())
             {
                 return process;
             }
-            registration = token.Register(obj =>
+
+            token.Register(obj =>
             {
                 if (obj is Process p && !p.HasExited)
                 {
@@ -181,7 +190,6 @@ public class PingProcess
             {
                 return process;
             }
-
             process.WaitForExit();
         }
         catch (Exception e)
@@ -201,16 +209,11 @@ public class PingProcess
             process.OutputDataReceived -= OutputHandler;
             process.ErrorDataReceived -= ErrorHandler;
 
-            registration?.Dispose();
-
-            try
+            if (!process.HasExited)
             {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                }
+                process.Kill();
             }
-            catch {}
+
         }
         return process;
 
