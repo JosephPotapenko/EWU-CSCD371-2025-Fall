@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -29,8 +28,7 @@ public class PingProcess
         StringBuilder? stringBuilder = null;
         void updateStdOutput(string? line) =>
             (stringBuilder ??= new StringBuilder()).AppendLine(line);
-        // Capture both stdout and stderr to ensure error messages (e.g., invalid host) are included
-        Process process = RunProcessInternal(StartInfo, updateStdOutput, updateStdOutput, default);
+        Process process = RunProcessInternal(StartInfo, updateStdOutput, default, default);
         return new PingResult(process.ExitCode, stringBuilder?.ToString());
     }
 
@@ -53,12 +51,6 @@ public class PingProcess
     public async Task<PingResult> RunAsync(params string[] hostNameOrAddresses)
     {
         var lines = new System.Collections.Concurrent.ConcurrentBag<string>();
-        return await RunAsync((IEnumerable<string>)hostNameOrAddresses);
-    }
-
-    public async Task<PingResult> RunAsync(IEnumerable<string> hostNameOrAddresses, CancellationToken cancellationToken = default)
-    {
-        var lines = new System.Collections.Concurrent.ConcurrentBag<string>();
         var tasks = hostNameOrAddresses.AsParallel().Select(address => Task.Run(() =>
         {
             StringBuilder? sb = null;
@@ -69,9 +61,9 @@ public class PingProcess
                 (sb ??= new StringBuilder()).AppendLine(line);
             }
             var info = new ProcessStartInfo("ping") { Arguments = FormatPingArguments(address) };
-            var process = RunProcessInternal(info, capture, capture, cancellationToken);
+            var process = RunProcessInternal(info, capture, null, default);
             return process.ExitCode;
-        }, cancellationToken)).ToArray();
+        })).ToArray();
 
         await Task.WhenAll(tasks);
         int totalExitCodes = tasks.Sum(t => t.Result);
@@ -97,7 +89,7 @@ public class PingProcess
         var task = Task.Factory.StartNew(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var process = RunProcessInternal(startInfo, capture, capture, cancellationToken);
+            var process = RunProcessInternal(startInfo, capture, null, cancellationToken);
             return new PingResult(process.ExitCode, stringBuilder?.ToString());
         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
@@ -134,7 +126,7 @@ public class PingProcess
                 (sb ??= new StringBuilder()).AppendLine(line);
             }
             var info = new ProcessStartInfo("ping") { Arguments = FormatPingArguments(hostNameOrAddress) };
-            var process = RunProcessInternal(info, capture, capture, cancellationToken);
+            var process = RunProcessInternal(info, capture, null, cancellationToken);
             return new PingResult(process.ExitCode, sb?.ToString());
         }, cancellationToken);
     }
