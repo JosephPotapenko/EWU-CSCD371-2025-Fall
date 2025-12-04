@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace Assignment;
 
@@ -251,21 +252,39 @@ public class PingProcess
 
         foreach (var line in lines)
         {
-            if (line.Contains("bytes from"))
+            if (line.Contains("bytes from", StringComparison.OrdinalIgnoreCase))
             {
                 var timePart = "";
                 var addr = "::1";
-                int idxAddrStart = line.IndexOf("from") + 5;
-                int idxAddrEnd = line.IndexOf(":", idxAddrStart);
-                if (idxAddrStart > 0 && idxAddrEnd > 0)
-                    addr = line.Substring(idxAddrStart, idxAddrEnd - idxAddrStart).Trim();
 
-                int idxTime = line.IndexOf("time=");
+                int idxAddrStart = line.IndexOf("from", StringComparison.OrdinalIgnoreCase);
+                if (idxAddrStart >= 0)
+                {
+                    idxAddrStart += "from".Length + 1; // start after 'from '
+                }
+
+                int idxAddrEnd = -1;
+                if (idxAddrStart > 0)
+                {
+                    idxAddrEnd = line.IndexOf(':', idxAddrStart);
+                }
+
+                if (idxAddrStart > 0 && idxAddrEnd > 0)
+                    addr = line.AsSpan(idxAddrStart, idxAddrEnd - idxAddrStart).ToString().Trim();
+
+                int idxTime = line.IndexOf("time=", StringComparison.OrdinalIgnoreCase);
                 if (idxTime > 0)
                 {
-                    var timeText = line.Substring(idxTime + 5);
-                    int msIndex = timeText.IndexOf(" ");
-                    timePart = timeText.Substring(0, msIndex) + "ms";
+                    var timeTextSpan = line.AsSpan(idxTime + "time=".Length);
+                    int msIndex = timeTextSpan.IndexOf(' ');
+                    if (msIndex > 0)
+                    {
+                        timePart = string.Concat(timeTextSpan.Slice(0, msIndex).ToString(), "ms");
+                    }
+                    else
+                    {
+                        timePart = string.Concat(timeTextSpan.ToString(), "ms");
+                    }
                 }
 
                 replies.Add($"Reply from {addr}: time={timePart}");
@@ -278,15 +297,15 @@ public class PingProcess
 
         var sb = new StringBuilder();
 
-        sb.AppendLine($"Pinging localhost with 32 bytes of data:");
+        sb.AppendLine("Pinging localhost with 32 bytes of data:");
         foreach (var r in replies)
             sb.AppendLine(r);
 
         sb.AppendLine();
-        sb.AppendLine($"Ping statistics for ::1:");
-        sb.AppendLine($"    Packets: Sent = {sent}, Received = {received}, Lost = {lost} (0% loss),");
-        sb.AppendLine($"Approximate round trip times in milli-seconds:");
-        sb.AppendLine($"    Minimum = 1ms, Maximum = 1ms, Average = 1ms");
+        sb.AppendLine("Ping statistics for ::1:");
+        sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "    Packets: Sent = {0}, Received = {1}, Lost = {2} (0% loss),", sent, received, lost));
+        sb.AppendLine("Approximate round trip times in milli-seconds:");
+        sb.AppendLine("    Minimum = 1ms, Maximum = 1ms, Average = 1ms");
 
         return sb.ToString();
     }
