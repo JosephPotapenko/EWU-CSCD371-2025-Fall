@@ -307,7 +307,7 @@ public class PingProcess
         sb.AppendLine();
         int count = replies.Count;
         sb.AppendLine("Ping statistics for ::1:");
-        sb.AppendLine($"    Packets: Sent = {count}, Received = {count}, Lost = 0 (0% loss),");
+        sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "    Packets: Sent = {0}, Received = {0}, Lost = 0 (0% loss),", count));
         sb.AppendLine("Approximate round trip times in milli-seconds:");
         sb.AppendLine("    Minimum = 1ms, Maximum = 1ms, Average = 1ms");
 
