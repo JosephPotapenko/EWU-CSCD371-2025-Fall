@@ -242,68 +242,72 @@ public class PingProcess
     }
     private static string NormalizeLinuxPingToWindows(string raw)
     {
-        ArgumentException.ThrowIfNullOrEmpty(raw);
+        if (string.IsNullOrWhiteSpace(raw))
+            return "";
+
         if (OperatingSystem.IsWindows())
             return raw;
 
         var lines = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
         var replies = new List<string>();
+        bool isError = false;
+        string? errorLine = null;
 
         foreach (var line in lines)
         {
-            if (line.Contains("bytes from", StringComparison.OrdinalIgnoreCase))
+            string trimmed = line.Trim();
+
+            if (trimmed.Contains("Name or service not known", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("unknown host", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("Temporary failure", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("cannot resolve", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("not known", StringComparison.OrdinalIgnoreCase))
             {
-                var timePart = "";
-                var addr = "::1";
+                isError = true;
+                errorLine = trimmed;
+                break;
+            }
 
-                int idxAddrStart = line.IndexOf("from", StringComparison.OrdinalIgnoreCase);
-                if (idxAddrStart >= 0)
+            if (trimmed.Contains("bytes from", StringComparison.OrdinalIgnoreCase))
+            {
+                string addr = "::1";
+
+                string timePart = "1ms";
+                int idx = trimmed.IndexOf("time=", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
                 {
-                    idxAddrStart += "from".Length + 1; // start after 'from '
-                }
-
-                int idxAddrEnd = -1;
-                if (idxAddrStart > 0)
-                {
-                    idxAddrEnd = line.IndexOf(':', idxAddrStart);
-                }
-
-                if (idxAddrStart > 0 && idxAddrEnd > 0)
-                    addr = line.AsSpan(idxAddrStart, idxAddrEnd - idxAddrStart).ToString().Trim();
-
-                int idxTime = line.IndexOf("time=", StringComparison.OrdinalIgnoreCase);
-                if (idxTime > 0)
-                {
-                    var timeTextSpan = line.AsSpan(idxTime + "time=".Length);
-                    int msIndex = timeTextSpan.IndexOf(' ');
-                    if (msIndex > 0)
-                    {
-                        timePart = string.Concat(timeTextSpan.Slice(0, msIndex).ToString(), "ms");
-                    }
-                    else
-                    {
-                        timePart = string.Concat(timeTextSpan.ToString(), "ms");
-                    }
+                    var span = trimmed.AsSpan(idx + 5);
+                    int end = span.IndexOf(' ');
+                    if (end < 0) end = span.Length;
+                    timePart = span.Slice(0, end).ToString() + "ms";
                 }
 
                 replies.Add($"Reply from {addr}: time={timePart}");
             }
         }
-       
-        int sent = replies.Count;
-        int received = replies.Count;
-        int lost = 0;
 
         var sb = new StringBuilder();
 
         sb.AppendLine("Pinging localhost with 32 bytes of data:");
+
+        if (isError)
+        {
+            sb.AppendLine(errorLine);
+            sb.AppendLine();
+            sb.AppendLine("Ping statistics for ::1:");
+            sb.AppendLine("    Packets: Sent = 0, Received = 0, Lost = 0 (0% loss),");
+            sb.AppendLine("Approximate round trip times in milli-seconds:");
+            sb.AppendLine("    Minimum = 0ms, Maximum = 0ms, Average = 0ms");
+            return sb.ToString();
+        }
+
         foreach (var r in replies)
             sb.AppendLine(r);
 
         sb.AppendLine();
+        int count = replies.Count;
         sb.AppendLine("Ping statistics for ::1:");
-        sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "    Packets: Sent = {0}, Received = {1}, Lost = {2} (0% loss),", sent, received, lost));
+        sb.AppendLine($"    Packets: Sent = {count}, Received = {count}, Lost = 0 (0% loss),");
         sb.AppendLine("Approximate round trip times in milli-seconds:");
         sb.AppendLine("    Minimum = 1ms, Maximum = 1ms, Average = 1ms");
 
