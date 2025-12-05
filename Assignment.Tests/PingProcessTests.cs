@@ -91,16 +91,15 @@ public class PingProcessTests
         try
         {
             task.Wait();
-            Assert.Fail("Expected TaskCanceledException wrapped in AggregateException");
         }
-        catch (AggregateException ex)
+        catch (AggregateException aggEx)
         {
-            ex = ex.Flatten();
+            var flat = aggEx.Flatten();
+            Assert.IsInstanceOfType(flat.InnerException, typeof(TaskCanceledException));
+            return;
+        }
 
-            Assert.IsTrue(
-                ex.InnerExceptions.Any(e => e is TaskCanceledException),
-                "Expected a TaskCanceledException inside AggregateException.");
-        };
+        Assert.Fail("Expected AggregateException but none was thrown.");
     }
 
     [TestMethod]

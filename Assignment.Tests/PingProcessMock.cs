@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Assignment.Tests;
 
-internal class PingProcessMock : PingProcess
+internal sealed class PingProcessMock : PingProcess
 {
-    private string CreatePingBlock(string host) => $@"
+    private static string CreatePingBlock(string host) => $@"
 Pinging {host} with 32 bytes of data:
 Reply from ::1: time<1ms
 Reply from ::1: time<1ms
@@ -32,7 +32,7 @@ Approximate round trip times in milli-seconds:
 
         token.ThrowIfCancellationRequested();
 
-        if (host.IndexOf("badaddress", StringComparison.OrdinalIgnoreCase) >= 0)
+        if (host.Contains("badaddress", StringComparison.OrdinalIgnoreCase))
         {
             string msg =
                 "Ping request could not find host badaddress. Please check the name and try again.";
