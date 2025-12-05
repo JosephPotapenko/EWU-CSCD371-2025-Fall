@@ -91,15 +91,17 @@ public class PingProcessTests
         try
         {
             task.Wait();
+            Assert.Fail("Expected AggregateException, but task completed successfully.");
         }
         catch (AggregateException aggEx)
         {
             var flat = aggEx.Flatten();
-            Assert.IsInstanceOfType(flat.InnerException, typeof(TaskCanceledException));
-            return;
-        }
 
-        Assert.Fail("Expected AggregateException but none was thrown.");
+            foreach (var ex in flat.InnerExceptions)
+            {
+                Assert.IsInstanceOfType(ex, typeof(TaskCanceledException));
+            }
+        }
     }
 
     [TestMethod]
