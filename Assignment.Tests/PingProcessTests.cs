@@ -91,18 +91,15 @@ public class PingProcessTests
         try
         {
             task.Wait();
-            Assert.Fail("Expected AggregateException, but task completed successfully.");
+            Assert.Fail("Expected TaskCanceledException wrapped in AggregateException");
         }
-        catch (AggregateException aggEx)
+        catch (AggregateException ex)
         {
-            var flat = aggEx.Flatten();
+            ex = ex.Flatten();
 
-            foreach (var ex in flat.InnerExceptions)
-            {
-                //Assert.IsInstanceOfType(ex, typeof(TaskCanceledException));
-                //I COMMENTED OUT THE ABOVE LINE BECAUSE MSTEST'S Assert.IsInstanceOfType IS NOT AVAILABLE IN .NET 6+ WITHOUT ADDITIONAL PACKAGES
-                //Please change when fixing
-            }
+            Assert.IsTrue(
+                ex.InnerExceptions.Any(e => e is TaskCanceledException),
+                "Expected a TaskCanceledException inside AggregateException.");
         }
     }
 
