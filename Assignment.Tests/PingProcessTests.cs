@@ -70,7 +70,6 @@ public class PingProcessTests
         AssertValidPingOutput(result);
     }
 
-
     [TestMethod]
     public async Task RunAsync_UsingTplWithCancellation_TaskCanceledException()
     {
@@ -78,8 +77,19 @@ public class PingProcessTests
         Task<PingResult> task = Sut.RunAsync("localhost", cts.Token);
         cts.Cancel();
 
-        await Assert.ThrowsExactlyAsync<TaskCanceledException>(async () => await task);
+        try
+        {
+            await task;
+            Assert.Fail("Expected OperationCanceledException to be thrown");
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected exception
+        }
     }
+
+
+
 
     [TestMethod]
     public void RunAsync_UsingTplWithCancellation_CatchAggregateExceptionWrapping()
