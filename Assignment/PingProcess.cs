@@ -42,32 +42,33 @@ public class PingProcess
         return result;
     }
 
-    async public Task<PingResult> RunAsync(params string[] hostNameOrAddresses)
+    async public Task<PingResult> RunAsync(IEnumerable<string> hostNameOrAddresses, CancellationToken cancellationToken = default)
     {
-        var tasks = hostNameOrAddresses.Select(address => Task.Run(() =>
+        List<Task<(int exitCode, List<string> collected)>> tasks = hostNameOrAddresses.Select(address => Task.Run(() =>
         {
-            var collected = new List<string>();
+            cancellationToken.ThrowIfCancellationRequested();
+            List<string> collected = new();
 
             void capture(string? line)
             {
                 if (line != null) collected.Add(line);
             }
 
-            var psi = new ProcessStartInfo("ping") { Arguments = address };
-            int exitCode = RunProcessInternal(psi, capture, null, default);
+            ProcessStartInfo psi = new("ping") { Arguments = address };
+            int exitCode = RunProcessInternal(psi, capture, null, cancellationToken);
 
             return (exitCode, collected);
-        })).ToList();
+        }, cancellationToken)).ToList();
 
-        var results = await Task.WhenAll(tasks);
+        (int exitCode, List<string> collected)[] results = await Task.WhenAll(tasks);
 
-        var builder = new StringBuilder();
+        StringBuilder builder = new();
         int totalExitCode = 0;
 
-        foreach (var (exitCode, lines) in results)
+        foreach ((int exitCode, List<string> lines) in results)
         {
             totalExitCode += exitCode;
-            foreach (var line in lines)
+            foreach (string line in lines)
                 builder.AppendLine(line);
         }
 

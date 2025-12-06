@@ -1,6 +1,7 @@
 ﻿using IntelliTect.TestTools;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,7 +77,7 @@ public class PingProcessTests
         CancellationTokenSource cts = new();
         Task<PingResult> task = Sut.RunAsync("localhost", cts.Token);
         cts.Cancel();
-        
+
         await Assert.ThrowsExactlyAsync<TaskCanceledException>(async () => await task);
     }
 
@@ -118,6 +119,18 @@ public class PingProcessTests
     }
 
     [TestMethod]
+    public async Task RunAsync_MultipleHostAddresses_WithCancellation_ThrowsTaskCanceledException()
+    {
+        string[] hostNames = new[] { "localhost", "localhost", "localhost", "localhost" };
+        CancellationTokenSource cts = new();
+        cts.Cancel();
+
+        Task<PingResult> task = Sut.RunAsync(hostNames, cts.Token);
+
+        await Assert.ThrowsExactlyAsync<TaskCanceledException>(async () => await task);
+    }
+
+    [TestMethod]
     async public Task RunLongRunningAsync_UsingTpl_Success()
     {
         PingResult result = await Sut.RunLongRunningAsync("localhost");
@@ -125,14 +138,82 @@ public class PingProcessTests
     }
 
     [TestMethod]
-    [Ignore] // Ignored because this test is expected to fail intermittently due to thread safety issues.
+    public void RunLongRunningAsync_WithCallbacksAndStartInfo_Success()
+    {
+        ProcessStartInfo startInfo = new("ping")
+        {
+            Arguments = "localhost",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        List<string?> output = new();
+        int exitCode = Sut.RunLongRunningAsync(startInfo, line => output.Add(line), null!, CancellationToken.None).Result;
+        string stdOutput = string.Join(Environment.NewLine, output.Where(l => l is not null));
+        AssertValidPingOutput(exitCode, stdOutput);
+    }
+
+    [TestMethod]
+    public void RunLongRunningAsync_WithCancellation_AggregateException()
+    {
+        ProcessStartInfo startInfo = new("ping")
+        {
+            Arguments = "localhost",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using CancellationTokenSource cts = new();
+        Task<int> task = Sut.RunLongRunningAsync(startInfo, _ => { }, null!, cts.Token);
+        cts.Cancel();
+
+        Assert.Throws<AggregateException>(() => { _ = task.Result; });
+    }
+
+    [TestMethod]
+    public async Task RunAsync_WithProgress_ReportsLines_Success()
+    {
+        List<string?> lines = new();
+        ManualResetEventSlim completed = new(false);
+        Progress<string?> progress = new(line =>
+        {
+            lines.Add(line);
+            if (line == null)
+            {
+                completed.Set();
+            }
+        });
+
+        PingResult result = await Sut.RunAsync("localhost", progress);
+
+        // Wait for progress to complete reporting
+        completed.Wait(TimeSpan.FromSeconds(5));
+
+        IEnumerable<string?> nonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l));
+        Assert.IsNotEmpty(nonEmptyLines, "Progress should have reported non-empty lines");
+        AssertValidPingOutput(result);
+    }
+
+    [TestMethod]
     public void StringBuilderAppendLine_InParallel_IsNotThreadSafe()
     {
         IEnumerable<int> numbers = Enumerable.Range(0, short.MaxValue);
         System.Text.StringBuilder stringBuilder = new();
-        numbers.AsParallel().ForAll(item => stringBuilder.AppendLine(""));
-        int lineCount = stringBuilder.ToString().Split(Environment.NewLine, StringSplitOptions.None).Length;
-        Assert.AreNotEqual(lineCount, numbers.Count() + 1);
+
+        try
+        {
+            numbers.AsParallel().ForAll(item => stringBuilder.AppendLine(""));
+            int lineCount = stringBuilder.ToString().Split(Environment.NewLine, StringSplitOptions.None).Length;
+            Assert.AreNotEqual(lineCount, numbers.Count() + 1,
+                "StringBuilder should not be thread-safe - line count should be incorrect due to race conditions");
+        }
+        catch (AggregateException)
+        {
+            // Expected: StringBuilder throws exceptions when used in parallel due to thread safety issues
+            return;
+        }
     }
 
     readonly string PingOutputLikeExpression = @"
